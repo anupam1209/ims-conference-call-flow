@@ -1,0 +1,2103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMS Conference Call Flow — Wireshark-Based Reference</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f4f1ea;
+        --paper: #fbf9f4;
+        --ink: #1a1a1a;
+        --muted: #5a5147;
+        --rule: #1a1a1a;
+        --accent: #b91c1c; /* deep red */
+        --accent2: #1e40af; /* deep blue */
+        --accent3: #15803d; /* deep green */
+        --accent4: #b45309; /* amber */
+        --ue: #1e40af;
+        --pcscf: #b45309;
+        --scscf: #7c2d12;
+        --confsig: #b91c1c;
+        --confmedia: #15803d;
+        --tas: #5b21b6;
+        --grid: rgba(26, 26, 26, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.6;
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 48px 32px;
+        background: var(--paper);
+        min-height: 100vh;
+        border-left: 1px solid var(--rule);
+        border-right: 1px solid var(--rule);
+        position: relative;
+      }
+      .page::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: var(--ink);
+      }
+
+      /* ===== Header ===== */
+      .doc-header {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 24px;
+        margin-bottom: 40px;
+      }
+      .doc-meta {
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-family: "Fraunces", serif;
+        font-size: 54px;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+      h1 .accent {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .subtitle {
+        font-family: "Fraunces", serif;
+        font-size: 20px;
+        color: var(--muted);
+        font-style: italic;
+        font-weight: 400;
+        max-width: 780px;
+      }
+
+      /* ===== Section headers ===== */
+      h2 {
+        font-family: "Fraunces", serif;
+        font-size: 34px;
+        font-weight: 600;
+        margin: 64px 0 8px;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+      }
+      h2 .num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: var(--accent);
+        font-weight: 500;
+        letter-spacing: 0.1em;
+      }
+      h3 {
+        font-family: "Fraunces", serif;
+        font-size: 22px;
+        font-weight: 600;
+        margin: 32px 0 8px;
+        color: var(--ink);
+      }
+      h4 {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 24px 0 10px;
+      }
+
+      p {
+        margin-bottom: 12px;
+        max-width: 78ch;
+      }
+      .lead {
+        font-size: 17px;
+        color: var(--ink);
+      }
+      strong {
+        font-weight: 600;
+        color: var(--ink);
+      }
+      code,
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.92em;
+        background: rgba(26, 26, 26, 0.06);
+        padding: 1px 6px;
+        border-radius: 3px;
+        color: var(--accent);
+      }
+      .uri {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85em;
+        color: var(--accent2);
+        background: rgba(30, 64, 175, 0.08);
+        padding: 1px 6px;
+        border-radius: 3px;
+      }
+
+      /* ===== TL;DR card ===== */
+      .tldr {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 28px 32px;
+        margin: 24px 0 40px;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+      }
+      .tldr::before {
+        content: "TL;DR";
+        position: absolute;
+        top: 14px;
+        right: 20px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        opacity: 0.4;
+      }
+      .tldr p {
+        color: var(--paper);
+        max-width: none;
+      }
+      .tldr p:last-child {
+        margin-bottom: 0;
+      }
+      .tldr .accent {
+        color: #fbbf24;
+      }
+
+      /* ===== Legend ===== */
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin: 24px 0 32px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: var(--paper);
+        border: 1px solid rgba(26, 26, 26, 0.15);
+        border-radius: 2px;
+      }
+      .legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .legend-text {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+      }
+
+      /* ===== Diagram ===== */
+      .diagram-wrap {
+        background: var(--paper);
+        border: 1px solid var(--ink);
+        padding: 28px 16px;
+        margin: 24px 0 40px;
+        overflow-x: auto;
+        border-radius: 2px;
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+      .diagram-wrap svg {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
+      }
+      .diagram-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* ===== Phase blocks ===== */
+      .phase {
+        margin: 40px 0;
+        border-left: 4px solid var(--accent);
+        padding-left: 24px;
+        position: relative;
+      }
+      .phase[data-color="blue"] {
+        border-color: var(--accent2);
+      }
+      .phase[data-color="green"] {
+        border-color: var(--accent3);
+      }
+      .phase[data-color="amber"] {
+        border-color: var(--accent4);
+      }
+      .phase-tag {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .phase[data-color="blue"] .phase-tag {
+        color: var(--accent2);
+      }
+      .phase[data-color="green"] .phase-tag {
+        color: var(--accent3);
+      }
+      .phase[data-color="amber"] .phase-tag {
+        color: var(--accent4);
+      }
+
+      /* ===== Step list ===== */
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding: 0;
+        margin: 16px 0;
+      }
+      .steps li {
+        counter-increment: step;
+        margin: 12px 0;
+        padding-left: 42px;
+        position: relative;
+      }
+      .steps li::before {
+        content: counter(step, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        background: rgba(185, 28, 28, 0.08);
+        padding: 3px 8px;
+        border-radius: 2px;
+        letter-spacing: 0.05em;
+      }
+      .steps li .arrow {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--muted);
+        font-size: 0.9em;
+        margin: 0 4px;
+      }
+
+      /* ===== Compare table ===== */
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0 32px;
+        font-size: 14px;
+      }
+      .compare th {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 10px 14px;
+        text-align: left;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
+      .compare td {
+        padding: 14px;
+        border-bottom: 1px solid rgba(26, 26, 26, 0.12);
+        vertical-align: top;
+      }
+      .compare tr:last-child td {
+        border-bottom: none;
+      }
+      .compare td:first-child {
+        font-weight: 600;
+        width: 24%;
+      }
+      .compare .doc-cell {
+        background: rgba(180, 83, 9, 0.06);
+      }
+      .compare .actual-cell {
+        background: rgba(21, 128, 61, 0.06);
+      }
+
+      /* ===== Debug card ===== */
+      .debug-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 24px 0;
+      }
+      .debug-card {
+        background: var(--paper);
+        border: 1px solid var(--ink);
+        padding: 18px;
+        border-radius: 2px;
+        position: relative;
+      }
+      .debug-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 3px;
+        background: var(--accent);
+      }
+      .debug-card h4 {
+        margin-top: 0;
+      }
+      .debug-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 8px 0 0;
+      }
+      .debug-card li {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(26, 26, 26, 0.1);
+      }
+      .debug-card li:last-child {
+        border: none;
+      }
+      .debug-card li .label {
+        color: var(--muted);
+        display: inline-block;
+        min-width: 96px;
+      }
+
+      /* ===== Pull quote ===== */
+      .pullquote {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-size: 22px;
+        line-height: 1.4;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        padding: 24px 0;
+        margin: 32px 0;
+        color: var(--ink);
+      }
+      .pullquote::before {
+        content: "❝ ";
+        color: var(--accent);
+        font-size: 32px;
+        font-style: normal;
+        font-family: "Fraunces", serif;
+      }
+
+      /* ===== Footer ===== */
+      footer {
+        margin-top: 80px;
+        border-top: 2px solid var(--ink);
+        padding-top: 24px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.05em;
+        text-align: center;
+      }
+
+      /* ===== Print ===== */
+      @media print {
+        body {
+          background: white;
+        }
+        .page {
+          box-shadow: none;
+          border: none;
+          max-width: none;
+        }
+        .diagram-wrap {
+          box-shadow: none;
+          page-break-inside: avoid;
+        }
+        .phase {
+          page-break-inside: avoid;
+        }
+      }
+
+      @media (max-width: 740px) {
+        .page {
+          padding: 24px 16px;
+        }
+        h1 {
+          font-size: 36px;
+        }
+        h2 {
+          font-size: 26px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="doc-header">
+        <div class="doc-meta">
+          <span>C-DOT IMS · Reference Document</span>
+          <span>Wireshark-Verified · 3-Way Conference</span>
+        </div>
+        <h1>
+          IMS Conference Call Flow<br /><span class="accent"
+            >decoded from the Wireshark.</span
+          >
+        </h1>
+        <!-- <p class="subtitle">Document ke flow se thodi alag — yeh waala flow seedhe ConfSig aur ConfMedia ke successful Wireshark capture se nikala gaya hai. Debugging ke time isko reference banao, document ko nahi.</p> -->
+      </header>
+
+      <!-- <div class="tldr">
+        <p>
+          <strong class="accent">Bottom line:</strong> Document mein
+          <code style="background: rgba(255, 255, 255, 0.1); color: #fbbf24"
+            >183 Session Progress + PRACK/UPDATE</code
+          >
+          dikhaya gaya hai — actual capture mein
+          <code style="background: rgba(255, 255, 255, 0.1); color: #fbbf24"
+            >200 OK directly</code
+          >
+          aata hai INVITE-Conf ke baad. Aur UE2/UE3 ko join karne ke liye
+          "INVITE with Replaces" nahi, balki
+          <code style="background: rgba(255, 255, 255, 0.1); color: #fbbf24"
+            >fresh out-of-dialog INVITE + in-dialog re-INVITE</code
+          >
+          ka pattern hai. Plus pehla SUBSCRIBE 403 Forbidden khaata hai — yeh
+          expected hai, retry ke baad pass hota hai.
+        </p>
+      </div> -->
+
+      <!-- <h2><span class="num">[01]</span> Architecture &amp; Actors</h2>
+      <p>
+        3-way conference mein involved 6 nodes hain. Capture ke according
+        signaling primarily
+        <strong>UE1 → P-CSCF → S-CSCF → CONF-AS-SIG</strong> path par chalti
+        hai. CONF-AS-SIG aur CONF-AS-Media internally
+        <strong>RestAPI (HTTP)</strong> se baat karte hain — yeh capture mein
+        clearly visible nahi hota kyunki yeh internal pod-to-pod communication
+        hai.
+      </p> -->
+
+      <!-- <div class="legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--ue)"></span
+          ><span class="legend-text">UE1 / UE2 / UE3</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--pcscf)"></span
+          ><span class="legend-text">P-CSCF</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--scscf)"></span
+          ><span class="legend-text">S-CSCF</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--tas)"></span
+          ><span class="legend-text">TAS</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--confsig)"></span
+          ><span class="legend-text">CONF-AS-SIG</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--confmedia)"></span
+          ><span class="legend-text">CONF-AS-Media</span>
+        </div>
+      </div> -->
+
+      <h2>Complete Signaling Flow</h2>
+      <div class="diagram-title">
+        Figure — End-to-end SIP flow (Wireshark-derived). Time axis flows top →
+        bottom.
+      </div>
+
+      <div class="diagram-wrap">
+        <svg
+          viewBox="0 0 1100 2540"
+          xmlns="http://www.w3.org/2000/svg"
+          font-family="'JetBrains Mono',monospace"
+        >
+          <defs>
+            <marker
+              id="arrow"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a" />
+            </marker>
+            <marker
+              id="arrow-red"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c" />
+            </marker>
+            <marker
+              id="arrow-blue"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e40af" />
+            </marker>
+            <marker
+              id="arrow-green"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d" />
+            </marker>
+          </defs>
+
+          <!-- Lifeline labels (column headers) -->
+          <g font-size="13" font-weight="700">
+            <rect x="20" y="20" width="120" height="40" rx="2" fill="#1e40af" />
+            <text x="80" y="45" text-anchor="middle" fill="#fff">UE1</text>
+            <rect
+              x="170"
+              y="20"
+              width="120"
+              height="40"
+              rx="2"
+              fill="#b45309"
+            />
+            <text x="230" y="45" text-anchor="middle" fill="#fff">P-CSCF</text>
+            <rect
+              x="320"
+              y="20"
+              width="120"
+              height="40"
+              rx="2"
+              fill="#7c2d12"
+            />
+            <text x="380" y="45" text-anchor="middle" fill="#fff">S-CSCF</text>
+            <rect
+              x="470"
+              y="20"
+              width="120"
+              height="40"
+              rx="2"
+              fill="#5b21b6"
+            />
+            <text x="530" y="45" text-anchor="middle" fill="#fff">TAS</text>
+            <rect
+              x="620"
+              y="20"
+              width="120"
+              height="40"
+              rx="2"
+              fill="#b91c1c"
+            />
+            <text x="680" y="45" text-anchor="middle" fill="#fff">
+              CONF-AS-SIG
+            </text>
+            <rect
+              x="770"
+              y="20"
+              width="120"
+              height="40"
+              rx="2"
+              fill="#15803d"
+            />
+            <text x="830" y="45" text-anchor="middle" fill="#fff">
+              CONF-AS-Media
+            </text>
+            <rect x="920" y="20" width="80" height="40" rx="2" fill="#1e40af" />
+            <text x="960" y="45" text-anchor="middle" fill="#fff">UE2</text>
+            <rect
+              x="1010"
+              y="20"
+              width="80"
+              height="40"
+              rx="2"
+              fill="#1e40af"
+            />
+            <text x="1050" y="45" text-anchor="middle" fill="#fff">UE3</text>
+          </g>
+
+          <!-- Lifelines (vertical) -->
+          <g
+            stroke="#1a1a1a"
+            stroke-width="1"
+            stroke-dasharray="3,3"
+            opacity="0.4"
+          >
+            <line x1="80" y1="60" x2="80" y2="2520" />
+            <line x1="230" y1="60" x2="230" y2="2520" />
+            <line x1="380" y1="60" x2="380" y2="2520" />
+            <line x1="530" y1="60" x2="530" y2="2520" />
+            <line x1="680" y1="60" x2="680" y2="2520" />
+            <line x1="830" y1="60" x2="830" y2="2520" />
+            <line x1="960" y1="60" x2="960" y2="2520" />
+            <line x1="1050" y1="60" x2="1050" y2="2520" />
+          </g>
+
+          <!-- ============ PHASE 0: PRE-MERGE STATE ============ -->
+          <g>
+            <rect
+              x="20"
+              y="80"
+              width="1070"
+              height="56"
+              fill="#fef3c7"
+              stroke="#b45309"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="103"
+              font-size="11"
+              font-weight="700"
+              fill="#b45309"
+              letter-spacing="2"
+            >
+              PHASE 0 — PRE-MERGE STATE
+            </text>
+            <text x="40" y="124" font-size="12" fill="#1a1a1a">
+              UE1 ↔ UE2 active call · UE2 on HOLD · UE1 ↔ UE3 second active call
+              (RTP via IMS-DP, NOT yet via Conf-Media)
+            </text>
+          </g>
+
+          <!-- ============ PHASE 1: UE1 INITIATES CONFERENCE ============ -->
+          <g>
+            <rect
+              x="20"
+              y="160"
+              width="1070"
+              height="32"
+              fill="#fee2e2"
+              stroke="#b91c1c"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="181"
+              font-size="11"
+              font-weight="700"
+              fill="#b91c1c"
+              letter-spacing="2"
+            >
+              PHASE 1 — MERGE PRESSED · UE1 JOINS CONFERENCE ROOM
+            </text>
+          </g>
+
+          <!-- INVITE-Conf -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="220"
+              x2="678"
+              y2="220"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="380"
+              y="213"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+            >
+              INVITE sip:mmtel@conf-factory.ims.mnc053.mcc404.3gppnetwork.org
+            </text>
+            <text
+              x="380"
+              y="232"
+              text-anchor="middle"
+              fill="#7f1d1d"
+              font-style="italic"
+            >
+              [SDP offer: UE1 media addr/port]
+            </text>
+          </g>
+
+          <!-- 100 Trying -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="260"
+              x2="82"
+              y2="260"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="253" text-anchor="middle">100 Trying</text>
+          </g>
+
+          <!-- Internal: CONF-AS-SIG <-> CONF-AS-Media: Create-Room -->
+          <g font-size="10">
+            <line
+              x1="680"
+              y1="295"
+              x2="828"
+              y2="295"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="290"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              HTTP POST /Create-Room
+            </text>
+            <line
+              x1="828"
+              y1="318"
+              x2="682"
+              y2="318"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="333"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK {room_id, media_ip, port}
+            </text>
+            <text
+              x="754"
+              y="346"
+              text-anchor="middle"
+              fill="#15803d"
+              font-style="italic"
+              font-size="9"
+            >
+              (internal RestAPI — pod-to-pod)
+            </text>
+          </g>
+
+          <!-- 200 OK INVITE -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="380"
+              x2="82"
+              y2="380"
+              stroke="#15803d"
+              stroke-width="2"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="373"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (INVITE)
+            </text>
+            <text
+              x="380"
+              y="392"
+              text-anchor="middle"
+              fill="#166534"
+              font-style="italic"
+            >
+              [SDP answer: c=Conf-Media-IP · m=audio 16080 · AMR/8000]
+            </text>
+          </g>
+
+          <!-- ACK -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="420"
+              x2="678"
+              y2="420"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="413" text-anchor="middle">ACK</text>
+          </g>
+
+          <!-- Note: no 183, no PRACK -->
+          <g>
+            <rect
+              x="160"
+              y="442"
+              width="780"
+              height="34"
+              fill="#fef9c3"
+              stroke="#b45309"
+              stroke-width="1"
+              stroke-dasharray="3,2"
+              rx="2"
+            />
+            <text
+              x="550"
+              y="463"
+              text-anchor="middle"
+              font-size="11"
+              font-style="italic"
+              fill="#7c2d12"
+            >
+              ⚠ No 183 Session Progress · No PRACK · No UPDATE — direct 200 OK
+              (deviates from document)
+            </text>
+          </g>
+
+          <!-- ============ PHASE 2: SUBSCRIBE for conference event ============ -->
+          <g>
+            <rect
+              x="20"
+              y="492"
+              width="1070"
+              height="32"
+              fill="#dbeafe"
+              stroke="#1e40af"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="513"
+              font-size="11"
+              font-weight="700"
+              fill="#1e40af"
+              letter-spacing="2"
+            >
+              PHASE 2 — SUBSCRIBE TO CONFERENCE EVENT PACKAGE
+            </text>
+          </g>
+
+          <!-- SUBSCRIBE 1 -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="552"
+              x2="678"
+              y2="552"
+              stroke="#1e40af"
+              stroke-width="2"
+              marker-end="url(#arrow-blue)"
+            />
+            <text
+              x="380"
+              y="545"
+              text-anchor="middle"
+              fill="#1e40af"
+              font-weight="700"
+            >
+              SUBSCRIBE Event: conference
+            </text>
+          </g>
+
+          <!-- 403 Forbidden -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="582"
+              x2="82"
+              y2="582"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="380"
+              y="575"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+            >
+              403 Forbidden
+            </text>
+            <text
+              x="380"
+              y="594"
+              text-anchor="middle"
+              fill="#7f1d1d"
+              font-style="italic"
+              font-size="10"
+            >
+              (auth challenge — first SUBSCRIBE intentionally rejected)
+            </text>
+          </g>
+
+          <!-- SUBSCRIBE 2 -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="624"
+              x2="678"
+              y2="624"
+              stroke="#1e40af"
+              stroke-width="2"
+              marker-end="url(#arrow-blue)"
+            />
+            <text
+              x="380"
+              y="617"
+              text-anchor="middle"
+              fill="#1e40af"
+              font-weight="700"
+            >
+              SUBSCRIBE (in-dialog, with credentials)
+            </text>
+          </g>
+
+          <!-- 200 OK SUBSCRIBE -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="654"
+              x2="82"
+              y2="654"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="647"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (SUBSCRIBE)
+            </text>
+          </g>
+
+          <!-- ============ PHASE 3: ADD UE2 ============ -->
+          <g>
+            <rect
+              x="20"
+              y="680"
+              width="1070"
+              height="32"
+              fill="#dcfce7"
+              stroke="#15803d"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="701"
+              font-size="11"
+              font-weight="700"
+              fill="#15803d"
+              letter-spacing="2"
+            >
+              PHASE 3 — REFER UE2 TO JOIN · CONF-AS PULLS UE2 INTO ROOM
+            </text>
+          </g>
+
+          <!-- REFER -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="740"
+              x2="678"
+              y2="740"
+              stroke="#15803d"
+              stroke-width="2"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="733"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              REFER Refer-To: &lt;sip:UE2-uri?Replaces=...&gt;
+            </text>
+            <text
+              x="380"
+              y="752"
+              text-anchor="middle"
+              fill="#166534"
+              font-style="italic"
+              font-size="10"
+            >
+              (in-dialog of conf-factory; carries UE1↔UE2 dialog identifiers)
+            </text>
+          </g>
+
+          <!-- 202 Accepted -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="780"
+              x2="82"
+              y2="780"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="773" text-anchor="middle">202 Accepted</text>
+          </g>
+
+          <!-- CONF-AS-SIG: INVITE to UE2 (fresh, out-of-dialog) -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="816"
+              x2="958"
+              y2="816"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="818"
+              y="808"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              INVITE sip:UE2@ims...
+            </text>
+            <text
+              x="818"
+              y="826"
+              text-anchor="middle"
+              fill="#7f1d1d"
+              font-style="italic"
+              font-size="9"
+            >
+              [fresh dialog · Call-ID=...IMS_CONF · SDP=Conf-Media:16084]
+            </text>
+          </g>
+
+          <!-- Note about Replaces/BYE -->
+          <g>
+            <rect
+              x="170"
+              y="844"
+              width="800"
+              height="32"
+              fill="#fef9c3"
+              stroke="#b45309"
+              stroke-width="1"
+              stroke-dasharray="3,2"
+              rx="2"
+            />
+            <text
+              x="570"
+              y="864"
+              text-anchor="middle"
+              font-size="10"
+              font-style="italic"
+              fill="#7c2d12"
+            >
+              In parallel: UE1 ka original UE1↔UE2 leg BYE ho jaata hai (200 OK
+              BYE capture mein observe hota hai)
+            </text>
+          </g>
+
+          <!-- 100 Trying from UE2 -->
+          <g font-size="11">
+            <line
+              x1="958"
+              y1="892"
+              x2="682"
+              y2="892"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="818" y="885" text-anchor="middle">100 Trying</text>
+          </g>
+
+          <!-- 200 OK from UE2 -->
+          <g font-size="11">
+            <line
+              x1="958"
+              y1="922"
+              x2="682"
+              y2="922"
+              stroke="#15803d"
+              stroke-width="2"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="818"
+              y="915"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (INVITE)
+            </text>
+            <text
+              x="818"
+              y="934"
+              text-anchor="middle"
+              fill="#166534"
+              font-style="italic"
+              font-size="10"
+            >
+              [UE2 SDP]
+            </text>
+          </g>
+
+          <!-- NOTIFY 100 Trying to UE1 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="966"
+              x2="82"
+              y2="966"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="959"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              NOTIFY Event: refer · sipfrag(SIP/2.0 100 Trying)
+            </text>
+          </g>
+
+          <!-- ACK to UE2 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="996"
+              x2="958"
+              y2="996"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="818" y="989" text-anchor="middle">ACK</text>
+          </g>
+
+          <!-- 200 OK NOTIFY -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="1024"
+              x2="678"
+              y2="1024"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="1017" text-anchor="middle">200 OK (NOTIFY)</text>
+          </g>
+
+          <!-- re-INVITE in-dialog to UE2 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1058"
+              x2="958"
+              y2="1058"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="818"
+              y="1050"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              re-INVITE (in-dialog, to UE2 contact URI)
+            </text>
+            <text
+              x="818"
+              y="1068"
+              text-anchor="middle"
+              fill="#7f1d1d"
+              font-style="italic"
+              font-size="9"
+            >
+              [updated SDP for conference media bridging]
+            </text>
+          </g>
+
+          <!-- 100 Trying -->
+          <g font-size="11">
+            <line
+              x1="958"
+              y1="1098"
+              x2="682"
+              y2="1098"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="818" y="1091" text-anchor="middle">100 Trying</text>
+          </g>
+
+          <!-- 200 OK -->
+          <g font-size="11">
+            <line
+              x1="958"
+              y1="1128"
+              x2="682"
+              y2="1128"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="818"
+              y="1121"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (re-INVITE)
+            </text>
+          </g>
+
+          <!-- ACK -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1158"
+              x2="958"
+              y2="1158"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="818" y="1151" text-anchor="middle">ACK</text>
+          </g>
+
+          <!-- HTTP Add-User -->
+          <g font-size="10">
+            <line
+              x1="680"
+              y1="1192"
+              x2="828"
+              y2="1192"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="1187"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              HTTP /Add-User UE2
+            </text>
+            <line
+              x1="828"
+              y1="1212"
+              x2="682"
+              y2="1212"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="1226"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK
+            </text>
+          </g>
+
+          <!-- NOTIFY 200 OK to UE1 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1254"
+              x2="82"
+              y2="1254"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="1247"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              NOTIFY sipfrag(SIP/2.0 200 OK) — UE2 joined
+            </text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="1284"
+              x2="678"
+              y2="1284"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="1277" text-anchor="middle">200 OK (NOTIFY)</text>
+          </g>
+
+          <!-- ============ PHASE 4: ADD UE3 ============ -->
+          <g>
+            <rect
+              x="20"
+              y="1310"
+              width="1070"
+              height="32"
+              fill="#dcfce7"
+              stroke="#15803d"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="1331"
+              font-size="11"
+              font-weight="700"
+              fill="#15803d"
+              letter-spacing="2"
+            >
+              PHASE 4 — REFER UE3 TO JOIN · SAME PATTERN REPEATS
+            </text>
+          </g>
+
+          <!-- REFER UE3 -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="1370"
+              x2="678"
+              y2="1370"
+              stroke="#15803d"
+              stroke-width="2"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="1363"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              REFER Refer-To: &lt;sip:UE3-uri?Replaces=...&gt;
+            </text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1400"
+              x2="82"
+              y2="1400"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="1393" text-anchor="middle">202 Accepted</text>
+          </g>
+
+          <!-- INVITE UE3 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1432"
+              x2="1048"
+              y2="1432"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="863"
+              y="1424"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              INVITE sip:UE3@ims...
+            </text>
+            <text
+              x="863"
+              y="1442"
+              text-anchor="middle"
+              fill="#7f1d1d"
+              font-style="italic"
+              font-size="9"
+            >
+              [fresh dialog · SDP=Conf-Media:&lt;next-port&gt;]
+            </text>
+          </g>
+
+          <!-- BYE old UE1↔UE3 leg note -->
+          <g>
+            <rect
+              x="170"
+              y="1460"
+              width="800"
+              height="32"
+              fill="#fef9c3"
+              stroke="#b45309"
+              stroke-width="1"
+              stroke-dasharray="3,2"
+              rx="2"
+            />
+            <text
+              x="570"
+              y="1480"
+              text-anchor="middle"
+              font-size="10"
+              font-style="italic"
+              fill="#7c2d12"
+            >
+              Original UE1↔UE3 leg BYE (200 OK observed)
+            </text>
+          </g>
+
+          <!-- 100 Trying -->
+          <g font-size="11">
+            <line
+              x1="1048"
+              y1="1508"
+              x2="682"
+              y2="1508"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="863" y="1501" text-anchor="middle">100 Trying</text>
+          </g>
+
+          <!-- 200 OK -->
+          <g font-size="11">
+            <line
+              x1="1048"
+              y1="1538"
+              x2="682"
+              y2="1538"
+              stroke="#15803d"
+              stroke-width="2"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="863"
+              y="1531"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (INVITE)
+            </text>
+          </g>
+
+          <!-- NOTIFY 100 Trying -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1572"
+              x2="82"
+              y2="1572"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="1565"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              NOTIFY sipfrag(100 Trying)
+            </text>
+          </g>
+
+          <!-- ACK -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1602"
+              x2="1048"
+              y2="1602"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="863" y="1595" text-anchor="middle">ACK</text>
+          </g>
+
+          <!-- 200 OK NOTIFY -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="1632"
+              x2="678"
+              y2="1632"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="1625" text-anchor="middle">200 OK (NOTIFY)</text>
+          </g>
+
+          <!-- re-INVITE UE3 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1664"
+              x2="1048"
+              y2="1664"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="863"
+              y="1657"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              re-INVITE (in-dialog, UE3 contact URI)
+            </text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="1048"
+              y1="1694"
+              x2="682"
+              y2="1694"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="863" y="1687" text-anchor="middle">100 Trying</text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="1048"
+              y1="1724"
+              x2="682"
+              y2="1724"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="863"
+              y="1717"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (re-INVITE)
+            </text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1754"
+              x2="1048"
+              y2="1754"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="863" y="1747" text-anchor="middle">ACK</text>
+          </g>
+
+          <!-- HTTP Add-User UE3 -->
+          <g font-size="10">
+            <line
+              x1="680"
+              y1="1788"
+              x2="828"
+              y2="1788"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="1783"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              HTTP /Add-User UE3
+            </text>
+            <line
+              x1="828"
+              y1="1808"
+              x2="682"
+              y2="1808"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="1822"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK
+            </text>
+          </g>
+
+          <!-- NOTIFY 200 OK -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="1850"
+              x2="82"
+              y2="1850"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="1843"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              NOTIFY sipfrag(200 OK) — UE3 joined
+            </text>
+          </g>
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="1880"
+              x2="678"
+              y2="1880"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              marker-end="url(#arrow)"
+            />
+            <text x="380" y="1873" text-anchor="middle">200 OK (NOTIFY)</text>
+          </g>
+
+          <!-- ============ PHASE 5: 3-WAY ACTIVE ============ -->
+          <g>
+            <rect
+              x="20"
+              y="1908"
+              width="1070"
+              height="160"
+              fill="#f0fdf4"
+              stroke="#15803d"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="1932"
+              font-size="11"
+              font-weight="700"
+              fill="#15803d"
+              letter-spacing="2"
+            >
+              PHASE 5 — 3-WAY CONFERENCE ACTIVE · MEDIA VIA CONF-MEDIA
+            </text>
+
+            <!-- 3 RTP streams visualization -->
+            <g font-size="11">
+              <!-- UE1 to/from CONF-Media -->
+              <line
+                x1="80"
+                y1="1970"
+                x2="828"
+                y2="1970"
+                stroke="#15803d"
+                stroke-width="3"
+                stroke-dasharray="2,4"
+              />
+              <text
+                x="454"
+                y="1962"
+                text-anchor="middle"
+                fill="#15803d"
+                font-weight="700"
+              >
+                RTP UE1 ⇄ Conf-Media (port 16080 ↔ UE1 port)
+              </text>
+
+              <line
+                x1="958"
+                y1="2000"
+                x2="828"
+                y2="2000"
+                stroke="#15803d"
+                stroke-width="3"
+                stroke-dasharray="2,4"
+              />
+              <text
+                x="893"
+                y="1992"
+                text-anchor="middle"
+                fill="#15803d"
+                font-weight="700"
+                font-size="10"
+              >
+                RTP UE2 ⇄ 16084
+              </text>
+
+              <line
+                x1="1048"
+                y1="2030"
+                x2="828"
+                y2="2030"
+                stroke="#15803d"
+                stroke-width="3"
+                stroke-dasharray="2,4"
+              />
+              <text
+                x="938"
+                y="2022"
+                text-anchor="middle"
+                fill="#15803d"
+                font-weight="700"
+                font-size="10"
+              >
+                RTP UE3 ⇄ 16088 (next port)
+              </text>
+            </g>
+
+            <text
+              x="555"
+              y="2056"
+              text-anchor="middle"
+              font-size="11"
+              font-style="italic"
+              fill="#166534"
+            >
+              Conf-Media performs N-way mixing · har UE ko other 2 ka mixed
+              audio milta hai
+            </text>
+          </g>
+
+          <!-- ============ PHASE 6: TERMINATION ============ -->
+          <g>
+            <rect
+              x="20"
+              y="2092"
+              width="1070"
+              height="32"
+              fill="#fee2e2"
+              stroke="#b91c1c"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="40"
+              y="2113"
+              font-size="11"
+              font-weight="700"
+              fill="#b91c1c"
+              letter-spacing="2"
+            >
+              PHASE 6 — UE1 TERMINATES CONFERENCE · CASCADE BYE
+            </text>
+          </g>
+
+          <!-- UE1 sends BYE -->
+          <g font-size="11">
+            <line
+              x1="80"
+              y1="2152"
+              x2="678"
+              y2="2152"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="380"
+              y="2145"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+            >
+              BYE sip:mmtel@conf-factory
+            </text>
+          </g>
+
+          <!-- CONF-AS sends BYE to UE2 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="2186"
+              x2="958"
+              y2="2186"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="818"
+              y="2179"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              BYE sip:UE2-contact
+            </text>
+          </g>
+
+          <!-- CONF-AS sends BYE to UE3 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="2216"
+              x2="1048"
+              y2="2216"
+              stroke="#b91c1c"
+              stroke-width="2"
+              marker-end="url(#arrow-red)"
+            />
+            <text
+              x="863"
+              y="2209"
+              text-anchor="middle"
+              fill="#b91c1c"
+              font-weight="700"
+              font-size="10"
+            >
+              BYE sip:UE3-contact
+            </text>
+          </g>
+
+          <!-- 200 OK BYE to UE1 -->
+          <g font-size="11">
+            <line
+              x1="678"
+              y1="2250"
+              x2="82"
+              y2="2250"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="380"
+              y="2243"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK (BYE)
+            </text>
+          </g>
+
+          <!-- 200 OK from UE2 -->
+          <g font-size="11">
+            <line
+              x1="958"
+              y1="2280"
+              x2="682"
+              y2="2280"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="818"
+              y="2273"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+              font-size="10"
+            >
+              200 OK (BYE)
+            </text>
+          </g>
+
+          <!-- 200 OK from UE3 -->
+          <g font-size="11">
+            <line
+              x1="1048"
+              y1="2310"
+              x2="682"
+              y2="2310"
+              stroke="#15803d"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="863"
+              y="2303"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+              font-size="10"
+            >
+              200 OK (BYE)
+            </text>
+          </g>
+
+          <!-- HTTP Destroy-Room -->
+          <g font-size="10">
+            <line
+              x1="680"
+              y1="2348"
+              x2="828"
+              y2="2348"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="2343"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              HTTP /Destroy-Room
+            </text>
+            <line
+              x1="828"
+              y1="2370"
+              x2="682"
+              y2="2370"
+              stroke="#15803d"
+              stroke-width="1.5"
+              stroke-dasharray="6,3"
+              marker-end="url(#arrow-green)"
+            />
+            <text
+              x="754"
+              y="2384"
+              text-anchor="middle"
+              fill="#15803d"
+              font-weight="700"
+            >
+              200 OK
+            </text>
+          </g>
+
+          <!-- Final state -->
+          <g>
+            <rect
+              x="20"
+              y="2410"
+              width="1070"
+              height="44"
+              fill="#f3f4f6"
+              stroke="#1a1a1a"
+              stroke-width="1.5"
+              rx="2"
+            />
+            <text
+              x="555"
+              y="2434"
+              text-anchor="middle"
+              font-size="13"
+              font-weight="700"
+              fill="#1a1a1a"
+            >
+              CONFERENCE TERMINATED · ROOM DESTROYED · ALL DIALOGS CLEARED
+            </text>
+            <text
+              x="555"
+              y="2450"
+              text-anchor="middle"
+              font-size="10"
+              fill="#5a5147"
+              font-style="italic"
+            >
+              P-CSCF sends STR to PCRF for each terminated leg (Rx interface)
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      <footer>
+        IMS Conference Call Flow · v1 · Wireshark-derived (CONFSIG + CONFMEDIA
+        captures, successful 3-way) · For C-DOT IMS debugging reference only
+      </footer>
+    </div>
+  </body>
+</html>
