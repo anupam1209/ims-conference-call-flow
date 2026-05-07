@@ -1,6 +1,6 @@
 # IMS Conference Call Flow — Wireshark-Based Reference
 
-A single-page, print-friendly HTML reference document that visualizes the **complete SIP signaling flow** for a 3-way conference call in a C-DOT IMS deployment. The flow is **derived directly from successful `CONFSIG` + `CONFMEDIA` Wireshark captures**, not from spec docs — so use this when the documented flow and the wire don't agree.
+A single-page, print-friendly HTML reference document that visualizes the **complete SIP signaling flow** for a 3-way conference call in a IMS deployment. The flow is **derived directly from successful `CONFSIG` + `CONFMEDIA` Wireshark captures**, not from spec docs — so use this when the documented flow and the wire don't agree.
 
 > **Bottom line:** The spec doc shows `183 Session Progress + PRACK/UPDATE` and an `INVITE with Replaces` pattern for joining UE2/UE3. The actual capture shows `200 OK directly` after `INVITE-Conf` and a `fresh out-of-dialog INVITE + in-dialog re-INVITE` pattern. The first `SUBSCRIBE` also gets a `403 Forbidden` — that's expected and passes on retry.
 
@@ -26,14 +26,14 @@ A single-page, print-friendly HTML reference document that visualizes the **comp
 
 ## Architecture (actors)
 
-| Node | Role |
-|---|---|
-| `UE1 / UE2 / UE3` | Conference participants |
-| `P-CSCF` | Proxy CSCF — also sends `STR` to PCRF on teardown (Rx) |
-| `S-CSCF` | Serving CSCF — primary signaling path: `UE1 → P-CSCF → S-CSCF → CONF-AS-SIG` |
-| `TAS` | Telephony Application Server |
-| `CONF-AS-SIG` | Conference signaling AS |
-| `CONF-AS-Media` | Conference media AS — talks to `CONF-AS-SIG` over **internal HTTP/REST** (not visible on SIP capture) |
+| Node              | Role                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `UE1 / UE2 / UE3` | Conference participants                                                                               |
+| `P-CSCF`          | Proxy CSCF — also sends `STR` to PCRF on teardown (Rx)                                                |
+| `S-CSCF`          | Serving CSCF — primary signaling path: `UE1 → P-CSCF → S-CSCF → CONF-AS-SIG`                          |
+| `TAS`             | Telephony Application Server                                                                          |
+| `CONF-AS-SIG`     | Conference signaling AS                                                                               |
+| `CONF-AS-Media`   | Conference media AS — talks to `CONF-AS-SIG` over **internal HTTP/REST** (not visible on SIP capture) |
 
 ## How to use
 
@@ -61,11 +61,13 @@ The page is also tuned for printing / PDF export (`@media print` strips backgrou
 ## When to read this vs. the spec doc
 
 Read **this** when:
+
 - You're staring at a Wireshark `.pcap` and the documented flow doesn't match what you see.
 - You're debugging conference setup, add-participant, or teardown on a live IMS box.
 - You need to know which messages are SIP-on-the-wire vs. internal HTTP between `CONF-AS-SIG` and `CONF-AS-Media`.
 
 Read **the spec doc** when:
+
 - You need standards-compliant behavior or interop reasoning.
 - You're reviewing what _should_ happen vs. what this deployment actually does.
 
@@ -83,4 +85,4 @@ Read **the spec doc** when:
 
 ---
 
-_For C-DOT IMS debugging reference only._
+_For IMS debugging reference only._
