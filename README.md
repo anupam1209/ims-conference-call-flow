@@ -1,6 +1,6 @@
 # IMS Conference Call Flow — Wireshark-Based Reference
 
-A single-page, print-friendly HTML reference document that visualizes the **complete SIP signaling flow** for a 3-way conference call in a C-DOT IMS deployment. The flow is **derived directly from successful `CONFSIG` + `CONFMEDIA` Wireshark captures**, not from spec docs — so use this when the documented flow and the wire don't agree.
+A single-page, print-friendly HTML reference document that visualizes the **complete SIP signaling flow** for a 3-way conference call in a IMS deployment. The flow is **derived directly from successful `CONFSIG` + `CONFMEDIA` Wireshark captures**, not from spec docs — so use this when the documented flow and the wire don't agree.
 
 > **Bottom line:** The spec doc shows `183 Session Progress + PRACK/UPDATE` and an `INVITE with Replaces` pattern for joining UE2/UE3. The actual capture shows `200 OK directly` after `INVITE-Conf` and a `fresh out-of-dialog INVITE + in-dialog re-INVITE` pattern. The first `SUBSCRIBE` also gets a `403 Forbidden` — that's expected and passes on retry.
 
@@ -83,4 +83,4 @@ Read **the spec doc** when:
 
 ---
 
-_For C-DOT IMS debugging reference only._
+_For IMS debugging reference only._
